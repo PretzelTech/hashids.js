@@ -1,21 +1,29 @@
 (function (global, factory) {
 	if (typeof define === "function" && define.amd) {
-		define(['module', 'exports'], factory);
+		define(['module', 'exports', 'bignum'], factory);
 	} else if (typeof exports !== "undefined") {
-		factory(module, exports);
+		factory(module, exports, require('bignum'));
 	} else {
 		var mod = {
 			exports: {}
 		};
-		factory(mod, mod.exports);
+		factory(mod, mod.exports, global.bignum);
 		global.Hashids = mod.exports;
 	}
-})(this, function (module, exports) {
+})(this, function (module, exports, _bignum) {
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 		value: true
 	});
+
+	var _bignum2 = _interopRequireDefault(_bignum);
+
+	function _interopRequireDefault(obj) {
+		return obj && obj.__esModule ? obj : {
+			default: obj
+		};
+	}
 
 	function _classCallCheck(instance, Constructor) {
 		if (!(instance instanceof Constructor)) {
@@ -67,6 +75,10 @@
 			};
 			this.parseInt = function (v, radix) {
 				return (/^(\-|\+)?([0-9]+|Infinity)$/.test(v) ? parseInt(v, radix) : NaN
+				);
+			};
+			this.bignum = function (v) {
+				return (/^(\-|\+)?([0-9]+|Infinity)$/.test(v) ? v !== Infinity ? (0, _bignum2.default)(v) : NaN : NaN
 				);
 			};
 
@@ -161,7 +173,8 @@
 				}
 
 				for (var i = 0; i !== numbers.length; i++) {
-					numbers[i] = this.parseInt(numbers[i], 10);
+					// numbers[i] = this.parseInt(numbers[i], 10);
+					numbers[i] = this.bignum(numbers[i]);
 					if (numbers[i] >= 0) {
 						continue;
 					} else {
@@ -209,7 +222,13 @@
 				var numbers = this.decode(id);
 
 				for (var i = 0; i !== numbers.length; i++) {
-					ret += numbers[i].toString(16).substr(1);
+					// ret += (numbers[i]).toString(16).substr(1);
+					var hexNum = numbers[i].toString(16);
+					var sub = 2;
+					if (hexNum.indexOf('1') === 0) {
+						sub = 1;
+					}
+					ret += hexNum.substr(sub);
 				}
 
 				return ret;
@@ -220,13 +239,16 @@
 
 				var ret = void 0,
 				    alphabet = this.alphabet,
-				    numbersIdInt = 0;
+
+				// numbersIdInt = 0;
+				numbersIdInt = (0, _bignum2.default)(0);
 
 				for (var i = 0; i !== numbers.length; i++) {
-					numbersIdInt += numbers[i] % (i + 100);
+					// numbersIdInt += (numbers[i] % (i + 100));
+					numbersIdInt = numbersIdInt.add(numbers[i].mod(i + 100));
 				}
 
-				ret = alphabet.charAt(numbersIdInt % alphabet.length);
+				ret = alphabet.charAt(numbersIdInt.mod(alphabet.length));
 				var lottery = ret;
 
 				for (var _i2 = 0; _i2 !== numbers.length; _i2++) {
@@ -240,23 +262,27 @@
 					ret += last;
 
 					if (_i2 + 1 < numbers.length) {
-						number %= last.charCodeAt(0) + _i2;
-						var sepsIndex = number % this.seps.length;
+						// number %= (last.charCodeAt(0) + i);
+						number = number.mod(last.charCodeAt(0) + _i2);
+						// const sepsIndex = number % this.seps.length;
+						var sepsIndex = number.mod(this.seps.length);
 						ret += this.seps.charAt(sepsIndex);
 					}
 				}
 
 				if (ret.length < this.minLength) {
 
-					var guardIndex = (numbersIdInt + ret[0].charCodeAt(0)) % this.guards.length;
+					// let guardIndex = (numbersIdInt + ret[0].charCodeAt(0)) % this.guards.length;
+					var guardIndex = numbersIdInt.add(ret[0].charCodeAt(0)).mod(this.guards.length);
 					var guard = this.guards[guardIndex];
 
 					ret = guard + ret;
 
 					if (ret.length < this.minLength) {
 
-						guardIndex = (numbersIdInt + ret[2].charCodeAt(0)) % this.guards.length;
-						guard = this.guards[guardIndex];
+						// guardIndex = (numbersIdInt + ret[2].charCodeAt(0)) % this.guards.length;
+						guardIndex = numbersIdInt.add(ret[2].charCodeAt(0)).mod(this.guards.length);
+						guard = this.guards[guardIndex.toNumber()];
 
 						ret += guard;
 					}
@@ -350,9 +376,12 @@
 				var id = '';
 
 				do {
-					id = alphabet.charAt(input % alphabet.length) + id;
-					input = parseInt(input / alphabet.length, 10);
-				} while (input);
+					// id = alphabet.charAt(input % alphabet.length) + id;
+					id = alphabet.charAt(input.mod(alphabet.length)) + id;
+					// input = parseInt(input / alphabet.length, 10);
+					input = input.div(alphabet.length);
+					// } while (input);
+				} while (input.toNumber());
 
 				return id;
 			}
@@ -362,9 +391,13 @@
 
 				return input.split("").map(function (item) {
 					return alphabet.indexOf(item);
-				}).reduce(function (carry, item) {
-					return carry * alphabet.length + item;
-				}, 0);
+				}).reduce(
+				// (carry, item) => carry * alphabet.length + item,
+				function (carry, item) {
+					return carry.mul(alphabet.length).add(item);
+				},
+				// 0
+				(0, _bignum2.default)(0));
 			}
 		}]);
 

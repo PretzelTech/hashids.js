@@ -15,15 +15,17 @@
   "scripts": {
     "lint": "eslint lib tests",
     "test": "mocha tests --compilers js:babel-core/register",
-    "coverage": "nyc npm test && nyc report --reporter=text-lcov | coveralls",
+    "coverage": "nyc yarn test",
     "build:node": "babel lib/hashids.js -o dist/hashids.js",
     "rename:global": "sed -i '' 's/global.hashids/global.Hashids/g' dist/hashids.js",
     "minify": "cd dist && uglifyjs hashids.js -o hashids.min.js --source-map hashids.min.map --compress --mangle",
-    "build": "npm run test && npm run build:node && npm run rename:global && npm run minify",
-    "clean": "rm -rf coverage .nyc_output npm-debug.log",
-    "all": "npm run lint && npm run coverage && npm run build && npm run clean"
+    "build": "yarn test && yarn build:node && yarn rename:global && yarn minify",
+    "clean": "rm -rf coverage .nyc_output npm-debug.log yarn-debug.log",
+    "all": "yarn lint && yarn coverage && yarn build && yarn clean"
   },
-  "dependencies": {},
+  "dependencies": {
+    "bignum": "^0.12.5"
+  },
   "devDependencies": {
     "babel-cli": "^6.10.1",
     "babel-core": "^6.10.4",
